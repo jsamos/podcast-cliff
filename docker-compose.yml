@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  rss-feed-parser:
+    build: .
+    container_name: rss-feed-parser
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/usr/src/app
