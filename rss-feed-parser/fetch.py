@@ -2,12 +2,16 @@ import requests
 from bs4 import BeautifulSoup
 import argparse
 import re
-import os
+from redis import Redis
+from rq import Queue
+import lxml.etree as ET
+
+redis_conn = Redis(host='redis', port=6379)
+q = Queue(connection=redis_conn)
 
 def fetch_podcast_rss(rss_url):
-    # Fetch the RSS feed
     response = requests.get(rss_url)
-    response.raise_for_status()  # Ensure we notice bad responses
+    response.raise_for_status()
     return BeautifulSoup(response.content, 'xml')
 
 def fetch_episode_item(soup, episode_number=None):
@@ -64,37 +68,13 @@ def parse_timestamps(item):
                 
                 item.append(timestamps_tag)
 
-def download_episode(item, download_folder="data"):
-    title = item.find('title').text
-    match = re.search(r'Ep (\d+)', title)
-    if not match:
-        print("Episode number not found in the title.")
-        return
-
-    episode_number = match.group(1)
-    audio_url = item.find('enclosure')['url']
-    
-    # Create a directory named after the episode number inside the download folder
-    episode_folder = os.path.join(download_folder, episode_number)
-    os.makedirs(episode_folder, exist_ok=True)
-    
-    # Get the original file name
-    filename = os.path.basename(audio_url)
-    download_path = os.path.join(episode_folder, filename)
-    
-    # Download the audio file
-    response = requests.get(audio_url, stream=True)
-    if response.status_code == 200:
-        with open(download_path, 'wb') as file:
-            for chunk in response.iter_content(chunk_size=1024):
-                if chunk:
-                    file.write(chunk)
-        print(f"Episode downloaded successfully: {download_path}")
-    else:
-        print(f"Failed to download episode. Status code: {response.status_code}")
+def item_to_xml(item):
+    # Extract the XML as a string with namespaces properly defined
+    item_soup = BeautifulSoup(str(item), 'xml')
+    return str(item_soup)
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Fetch and download audio URL from an RSS feed")
+    parser = argparse.ArgumentParser(description="Fetch and enqueue episode item from an RSS feed")
     parser.add_argument('rss_url', type=str, help='URL of the RSS feed')
     parser.add_argument('--episode', type=int, help='Episode number to fetch', default=None)
     args = parser.parse_args()
@@ -104,6 +84,7 @@ if __name__ == "__main__":
 
     if item:
         parse_timestamps(item)
-        download_episode(item, 'data')
+        item_xml = item_to_xml(item)
+        q.enqueue('tasks.process_episode_item', item_xml)
     else:
         print(f"Episode {args.episode} not found." if args.episode else "No episodes found.")

@@ -2,9 +2,32 @@ version: '3.8'
 
 services:
   rss-feed-parser:
-    build: .
+    build: ./rss-feed-parser
     container_name: rss-feed-parser
     stdin_open: true
     tty: true
     volumes:
-      - .:/usr/src/app
+      - ./rss-feed-parser:/app
+      - data:/data
+    depends_on:
+      - redis
+
+  redis:
+    image: "redis:alpine"
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  message-processor:
+    build: ./message-processor
+    container_name: message-processor
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./message-processor:/app
+      - data:/data
+    depends_on:
+      - redis
+
+volumes:
+  data:
