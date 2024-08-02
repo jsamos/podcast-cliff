@@ -8,7 +8,7 @@ services:
     tty: true
     volumes:
       - ./rss-feed-parser:/app
-      - data:/data
+      - ./data:/data  # Bind mount for the data directory
     depends_on:
       - redis
 
@@ -25,9 +25,6 @@ services:
     tty: true
     volumes:
       - ./message-processor:/app
-      - data:/data
+      - ./data:/data  # Bind mount for the data directory
     depends_on:
       - redis
-
-volumes:
-  data:
