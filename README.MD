@@ -1,7 +1,7 @@
 
 # Podcast RSS Feed Processor
 
-This project fetches podcast episodes from an RSS feed, enqueues metadata processing tasks using Redis Queue (RQ), and processes these tasks asynchronously. The setup involves two main services: `rss-feed-parser` and `message-processor`, along with a Redis service for task queuing.
+This project fetches podcast episodes from an RSS feed, enqueues metadata processing tasks using Redis Queue (RQ), and processes these tasks asynchronously. The setup involves two main services: `rss-feed-parser` and `message-processor`, along with a Redis service for task queuing. The app also splits downloaded audio files into smaller fragments of configurable length.
 
 ## Table of Contents
 
@@ -9,6 +9,7 @@ This project fetches podcast episodes from an RSS feed, enqueues metadata proces
 - [Installation](#installation)
 - [Usage](#usage)
 - [Optional Parameters](#optional-parameters)
+- [Capabilities](#capabilities)
 - [Directory Structure](#directory-structure)
 - [Contributing](#contributing)
 - [License](#license)
@@ -77,10 +78,19 @@ python fetch.py https://feeds.captivate.fm/the-game-alex-hormozi/ --episode 10
 
 If the `--episode` parameter is not provided, the script will fetch the latest episode (the first item in the RSS feed).
 
+## Capabilities
+
+- **Fetch Episodes**: The app fetches podcast episodes from a provided RSS feed URL.
+- **Download Audio Files**: It downloads the full-length audio file of the specified or latest episode.
+- **Process Metadata**: The app processes metadata of the episodes and updates the RSS feed item XML.
+- **Split Audio Files**: The downloaded audio file is split into smaller fragments of a configurable length.
+- **Store Files**: The full-length audio file and its fragments are stored in the `data` directory, which is shared between the host machine and the Docker containers.
+
 ## Directory Structure
 
 ```plaintext
 .
+├── data                       # This will be shared between host and containers
 ├── docker-compose.yml
 ├── rss-feed-parser
 │   ├── Dockerfile
@@ -90,12 +100,14 @@ If the `--episode` parameter is not provided, the script will fetch the latest e
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── tasks.py
-│   └── worker.py
+│   ├── worker.py
+│   └── config.yaml
 ```
 
 - **rss-feed-parser**: Contains the script to fetch podcast episodes and enqueue tasks.
-- **message-processor**: Contains the worker that processes the tasks and downloads the audio files.
+- **message-processor**: Contains the worker that processes the tasks and downloads the audio files, as well as splitting them into fragments.
 - **docker-compose.yml**: Docker Compose configuration file to set up the services.
+- **data**: Shared directory between the host machine and Docker containers for storing audio files.
 
 ## Contributing
 
