@@ -1,1 +1,3 @@
-audio_fragment_length: 60  # length of audio fragments in seconds
+audio_fragment_length: 60
+transcription_check_interval: 10  # in seconds
+transcription_max_wait_time: 1200  # in seconds
