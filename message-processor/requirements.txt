@@ -6,3 +6,5 @@ rq
 pydub
 ffmpeg
 PyYAML
+speechrecognition
+vosk

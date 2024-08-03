@@ -5,9 +5,11 @@ from bs4 import BeautifulSoup
 from pydub import AudioSegment
 from redis import Redis
 from rq import Queue
-
-# Load the configuration
+import speech_recognition as sr
+from vosk import Model, KaldiRecognizer
+import json
 import yaml
+import wave
 
 with open("config.yaml", 'r') as stream:
     config = yaml.safe_load(stream)
@@ -68,8 +70,8 @@ def process_local_audio(item_xml):
 
     print(f"Processing full length audio file: {full_length_path}")  # Debug statement
 
-    # Load the full length audio file
-    audio = AudioSegment.from_mp3(full_length_path)
+    # Load the full length audio file and set frame rate to 16000 Hz
+    audio = AudioSegment.from_mp3(full_length_path).set_frame_rate(16000)
     duration = len(audio) // 1000  # duration in seconds
     print(f"Audio duration (seconds): {duration}")  # Debug statement
 
@@ -79,9 +81,12 @@ def process_local_audio(item_xml):
     for i, start in enumerate(range(0, len(audio), fragment_length)):
         end = min(start + fragment_length, len(audio))
         fragment = audio[start:end]
-        fragment_filename = f"{os.path.splitext(full_length_path)[0]}_{start // 1000}_{end // 1000}.mp3"
-        fragment.export(fragment_filename, format="mp3")
+        fragment_filename = f"{os.path.splitext(full_length_path)[0]}_{start // 1000}_{end // 1000}.wav"
+        fragment.export(fragment_filename, format="wav")
         print(f"Created fragment: {fragment_filename}")  # Debug statement
+
+        # Enqueue the transcription task for each fragment
+        q.enqueue('tasks.process_audio_fragment', fragment_filename)
 
         # Append the fragment details to the XML
         fragment_tag = soup.new_tag('fragment', index=str(i + 1), start=str(start // 1000), end=str(end // 1000))
@@ -94,3 +99,35 @@ def process_local_audio(item_xml):
     item_xml_updated = str(soup)
     # You can save this updated XML to a file or process it further as needed
     print(f"Updated item XML: {item_xml_updated}")  # Debug statement
+
+# Load the Vosk model (ensure the model is downloaded and placed in the appropriate directory)
+model_path = "vosk-model-small-en-us-0.15"
+model = Model(model_path)
+
+# Load the Vosk model (ensure the model is downloaded and placed in the appropriate directory)
+model_path = "/app/vosk-model-small-en-us-0.15"  # Adjust the path to your model
+model = Model(model_path)
+
+def check_audio_file(wav_path):
+    with wave.open(wav_path, 'r') as wf:
+        sample_rate = wf.getframerate()
+        n_frames = wf.getnframes()
+        duration = n_frames / sample_rate
+        print(f"Sample rate: {sample_rate}, Duration: {duration}s, Frames: {n_frames}")
+
+def process_audio_fragment(fragment_path):
+    # Check the audio file before processing
+    check_audio_file(fragment_path)
+    recognizer = sr.Recognizer()
+    with sr.AudioFile(fragment_path) as source:
+        audio_data = recognizer.record(source)
+    # Use 16000 Hz sample rate
+    rec = KaldiRecognizer(model, 16000)
+    rec.AcceptWaveform(audio_data.get_wav_data())
+    result = json.loads(rec.Result())
+    transcription = result.get('text', '')
+    # Save the transcription to a text file
+    transcription_path = f"{fragment_path}.txt"
+    with open(transcription_path, 'w') as file:
+        file.write(transcription)
+    print(f"Transcription saved: {transcription_path}")
