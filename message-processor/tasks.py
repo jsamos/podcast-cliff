@@ -141,6 +141,7 @@ def process_audio_generation_completed(item_xml):
             for fragment, file in zip(fragments, expected_files):
                 fragment['transcript'] = file
             print(f"All transcription files found: {expected_files}")
+            q.enqueue('tasks.process_transcript_completed', str(soup))
             break
         elif time.time() - start_time > TRANSCRIPTION_MAX_WAIT_TIME:
             print(f"Timeout occurred after waiting for {TRANSCRIPTION_MAX_WAIT_TIME} seconds.")
@@ -151,3 +152,36 @@ def process_audio_generation_completed(item_xml):
 
     item_xml_updated = str(soup)
     print(f"Final item XML: {item_xml_updated}")
+
+def process_transcript_completed(item_xml):
+    soup = BeautifulSoup(item_xml, 'xml')
+    item = soup.find('item')
+    
+    episode_title = item.find('title').text
+    episode_number_match = re.search(r'Ep (\d+)', episode_title)
+    episode_number = episode_number_match.group(1) if episode_number_match else "unknown"
+    
+    # Determine the episode folder and transcript file path
+    download_folder = "/data"
+    episode_folder = os.path.join(download_folder, episode_number)
+    transcript_file_path = os.path.join(episode_folder, f"transcript_{episode_number}.txt")
+    
+    # Open the transcript file for writing
+    with open(transcript_file_path, 'w') as transcript_file:
+        # Write the episode summary
+        content_encoded = item.find('encoded')
+        if content_encoded:
+            transcript_file.write(">>Episode Summary\n")
+            transcript_file.write(content_encoded.text + "\n\n")
+        
+        # Write the transcriptions for each fragment
+        fragments = item.find_all('fragment')
+        for fragment in fragments:
+            start_time = fragment['start']
+            end_time = fragment['end']
+            transcript_file.write(f">>TIME: {start_time}, {end_time}\n")
+            transcript_path = fragment['transcript']
+            with open(transcript_path, 'r') as fragment_file:
+                transcript_file.write(fragment_file.read() + "\n")
+    
+    print(f"Combined transcript saved: {transcript_file_path}")
