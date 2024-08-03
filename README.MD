@@ -71,7 +71,7 @@ The `fetch.py` script supports an optional parameter to specify the episode numb
 To fetch episode number 10 from the RSS feed:
 
 ```sh
-python fetch.py https://feeds.captivate.fm/the-game-alex-hormozi/ --episode 10
+python fetch.py https://feeds.captivate.fm/the-game-alex-hormozi/ --episode 744
 ```
 
 ### Default Behavior:
