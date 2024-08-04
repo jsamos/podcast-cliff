@@ -169,7 +169,7 @@ def process_transcript_completed(item_xml):
     # Open the transcript file for writing
     with open(transcript_file_path, 'w') as transcript_file:
         # Write the episode summary
-        content_encoded = item.find('encoded')
+        content_encoded = item.find('encoded') #formerly content:encoded
         if content_encoded:
             transcript_file.write(">>Episode Summary\n")
             transcript_file.write(content_encoded.text + "\n\n")
@@ -185,3 +185,28 @@ def process_transcript_completed(item_xml):
                 transcript_file.write(fragment_file.read() + "\n")
     
     print(f"Combined transcript saved: {transcript_file_path}")
+
+    # Enqueue the next task
+    q.enqueue('tasks.process_full_transcript_completed', str(soup))
+
+def process_full_transcript_completed(item_xml):
+    soup = BeautifulSoup(item_xml, 'xml')
+    item = soup.find('item')
+
+    # Determine the files to delete
+    files = item.find('files')
+    full_length_path = files.find('full_length').text
+
+    fragments = item.find_all('fragment')
+    fragment_files = [fragment.string for fragment in fragments]
+    transcript_files = [fragment['transcript'] for fragment in fragments]
+
+    # Delete the files
+    for file_path in [full_length_path] + fragment_files + transcript_files:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+            print(f"Deleted file: {file_path}")
+        else:
+            print(f"File not found, could not delete: {file_path}")
+
+    print("All temporary files deleted, final transcript preserved.")
