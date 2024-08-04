@@ -4,6 +4,7 @@ import time
 import yaml
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urlparse
 from redis import Redis
 from rq import Queue
 import speech_recognition as sr
@@ -11,6 +12,17 @@ from pydub import AudioSegment
 from vosk import Model, KaldiRecognizer
 import json
 import wave
+
+
+def sanitize_title(title, max_length=50):
+    """Sanitize the title to be filesystem safe, limit its length, and allow only alphanumeric characters."""
+    # Replace any character that is not a letter or a number with a hyphen
+    sanitized = re.sub(r'[^a-zA-Z0-9]', '-', title)
+    # Replace multiple hyphens with a single hyphen
+    sanitized = re.sub(r'-+', '-', sanitized)
+    # Trim leading or trailing hyphens
+    sanitized = sanitized.strip('-')
+    return sanitized[:max_length]
 
 # Load the configuration
 with open("config.yaml", 'r') as stream:
@@ -90,8 +102,9 @@ def process_local_audio(item_xml):
 def process_episode_item(item_xml):
     soup = BeautifulSoup(item_xml, 'xml')
     item = soup.find('item')
-    
+
     title = item.find('title').text
+    sanitized_title = sanitize_title(title)
     enclosure = item.find('enclosure')
     audio_url = enclosure['url'] if enclosure else None
 
@@ -99,16 +112,13 @@ def process_episode_item(item_xml):
         print("Audio URL not found in the item.")
         return
 
-    episode_number_match = re.search(r'Ep (\d+)', title)
-    episode_number = episode_number_match.group(1) if episode_number_match else "unknown"
-
     download_folder = "/data"
-    episode_folder = os.path.join(download_folder, episode_number)
+    episode_folder = os.path.join(download_folder, sanitized_title)
     os.makedirs(episode_folder, exist_ok=True)
-    
-    filename = os.path.basename(audio_url)
+
+    filename = os.path.basename(urlparse(audio_url).path)
     download_path = os.path.join(episode_folder, filename)
-    
+
     response = requests.get(audio_url, stream=True)
     if response.status_code == 200:
         with open(download_path, 'wb') as file:
@@ -116,7 +126,7 @@ def process_episode_item(item_xml):
                 if chunk:
                     file.write(chunk)
         print(f"Episode downloaded successfully: {download_path}")
-        
+
         files_tag = soup.new_tag('files')
         full_length_tag = soup.new_tag('full_length')
         full_length_tag.string = download_path
@@ -124,6 +134,7 @@ def process_episode_item(item_xml):
         item.append(files_tag)
 
         item_xml_updated = str(soup)
+        # Assuming q.enqueue is a task queue for further processing
         q.enqueue('tasks.process_local_audio', item_xml_updated)
     else:
         print(f"Failed to download episode. Status code: {response.status_code}")
@@ -156,16 +167,17 @@ def process_audio_generation_completed(item_xml):
 def process_transcript_completed(item_xml):
     soup = BeautifulSoup(item_xml, 'xml')
     item = soup.find('item')
-    
+
     episode_title = item.find('title').text
-    episode_number_match = re.search(r'Ep (\d+)', episode_title)
-    episode_number = episode_number_match.group(1) if episode_number_match else "unknown"
-    
+    sanitized_title = sanitize_title(episode_title)
+
     # Determine the episode folder and transcript file path
     download_folder = "/data"
-    episode_folder = os.path.join(download_folder, episode_number)
-    transcript_file_path = os.path.join(episode_folder, f"transcript_{episode_number}.txt")
-    
+
+    # Use the sanitized title for folder and file names
+    episode_folder = os.path.join(download_folder, sanitized_title)
+    transcript_file_path = os.path.join(episode_folder, f"transcript_{sanitized_title}.txt")
+
     # Open the transcript file for writing
     with open(transcript_file_path, 'w') as transcript_file:
         # Write the episode summary
@@ -173,7 +185,7 @@ def process_transcript_completed(item_xml):
         if content_encoded:
             transcript_file.write(">>Episode Summary\n")
             transcript_file.write(content_encoded.text + "\n\n")
-        
+
         # Write the transcriptions for each fragment
         fragments = item.find_all('fragment')
         for fragment in fragments:
@@ -183,7 +195,7 @@ def process_transcript_completed(item_xml):
             transcript_path = fragment['transcript']
             with open(transcript_path, 'r') as fragment_file:
                 transcript_file.write(fragment_file.read() + "\n")
-    
+
     print(f"Combined transcript saved: {transcript_file_path}")
 
     # Enqueue the next task
