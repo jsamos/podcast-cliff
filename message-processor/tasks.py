@@ -169,13 +169,14 @@ def process_transcript_completed(item_xml):
     item = soup.find('item')
 
     episode_title = item.find('title').text
-    episode_number_match = re.search(r'Ep (\d+)', episode_title)
-    episode_number = episode_number_match.group(1) if episode_number_match else "unknown"
+    sanitized_title = sanitize_title(episode_title)
 
     # Determine the episode folder and transcript file path
     download_folder = "/data"
-    episode_folder = os.path.join(download_folder, episode_number)
-    transcript_file_path = os.path.join(episode_folder, f"transcript_{episode_number}.txt")
+
+    # Use the sanitized title for folder and file names
+    episode_folder = os.path.join(download_folder, sanitized_title)
+    transcript_file_path = os.path.join(episode_folder, f"transcript_{sanitized_title}.txt")
 
     # Open the transcript file for writing
     with open(transcript_file_path, 'w') as transcript_file:
