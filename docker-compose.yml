@@ -11,6 +11,16 @@ services:
       - ./data:/data  # Bind mount for the data directory
     depends_on:
       - redis
+  localfile-loader:
+    build: ./localfile-loader
+    container_name: localfile-loader
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./localfile-loader:/app
+      - ./data:/data  # Bind mount for the data directory
+    depends_on:
+      - redis
 
   redis:
     image: "redis:alpine"

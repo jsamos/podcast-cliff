@@ -170,12 +170,8 @@ def process_transcript_completed(item_xml):
 
     episode_title = item.find('title').text
     sanitized_title = sanitize_title(episode_title)
-
-    # Determine the episode folder and transcript file path
-    download_folder = "/data"
-
     # Use the sanitized title for folder and file names
-    episode_folder = os.path.join(download_folder, sanitized_title)
+    episode_folder = os.path.dirname(item.find('files').find('full_length').text)
     transcript_file_path = os.path.join(episode_folder, f"transcript_{sanitized_title}.txt")
 
     # Open the transcript file for writing
