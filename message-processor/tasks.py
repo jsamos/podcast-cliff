@@ -91,7 +91,6 @@ def audio_file_downloaded(json_string):
 
     json_output = json.dumps(item_dict)
     q.enqueue('tasks.audio_fragment_list_enqueued', json_output)
-    print(f"Updated item JSON: {item_dict}")
 
 
 def audio_fragment_list_enqueued(json_string):
@@ -102,7 +101,7 @@ def audio_fragment_list_enqueued(json_string):
     while True:
         all_files_exist = all(os.path.exists(file) for file in expected_files)
         if all_files_exist:
-            print(f"All transcription files found: {expected_files}")
+            print(f"All transcription files found")
             q.enqueue('tasks.fragment_list_completed', json_string)
             break
         elif time.time() - start_time > TRANSCRIPTION_MAX_WAIT_TIME:

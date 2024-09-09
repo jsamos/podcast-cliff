@@ -44,6 +44,5 @@ def process_episode_item(json_string):
     else:
         save_episode(response, download_path)
         item_dict['files'] = {'full_length': download_path}
-        print(item_dict)
         json_output = json.dumps(item_dict)
         podcast_queue.enqueue('tasks.audio_file_downloaded', json_output)
