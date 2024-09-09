@@ -44,7 +44,7 @@ Transcription is handled by Vosk API.
 
 ### API
 
-The API will be available at http://localhost:5001. You can use the following endpoint to enqueue a transcription job:
+The API will be available at http://localhost:#{API_PORT}. You can use the following endpoint to enqueue a transcription job:
 
 - Endpoint: /transcribe/rss
 - Method: POST
