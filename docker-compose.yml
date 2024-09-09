@@ -30,6 +30,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - FLASK_DEBUG=${FLASK_DEBUG:-0}
+      - FLASK_ENV=${FLASK_ENV:-development}
       - API_USERNAME=${API_USERNAME}
       - API_PASSWORD=${API_PASSWORD}
     volumes:
