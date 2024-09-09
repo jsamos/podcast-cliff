@@ -39,13 +39,14 @@ Transcription is handled by Vosk API.
 ### API
 
 The API will be available at http://localhost:5001. You can use the following endpoint to enqueue a transcription job:
-Endpoint: /transcribe/rss
-Method: POST
-Content-Type: application/json
-Authentication: Basic Auth (use the API_TOKEN as the username, leave the password blank)
-Body parameters:
-rss_url (required): The URL of the RSS feed
-title (optional): The title of the specific episode to transcribe
+
+- Endpoint: /transcribe/rss
+- Method: POST
+- Content-Type: application/json
+- Authentication: Basic Auth (use the API_TOKEN as the username, leave the password blank)
+- Body parameters:
+  - rss_url (required): The URL of the RSS feed
+  - title (optional): The title of the specific episode to transcribe
 
 ```sh
    curl -X POST http://localhost:5001/transcribe/rss \
