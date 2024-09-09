@@ -24,4 +24,4 @@ def media_download_requested(json_string):
         save_streamed_media(response, download_path)
         item_dict['files'] = {'full_length': download_path}
         json_output = json.dumps(item_dict)
-        q.enqueue('media.media_file_downloaded', json_output)
+        q.enqueue('media.new_file_present', json_output)

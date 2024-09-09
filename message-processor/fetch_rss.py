@@ -3,7 +3,7 @@ from redis import Redis
 from rq import Queue
 
 redis_conn = Redis(host='redis', port=6379)
-q = Queue('rss_queue', connection=redis_conn)
+q = Queue('podcast_queue', connection=redis_conn)
 
 
 if __name__ == "__main__":
@@ -11,4 +11,4 @@ if __name__ == "__main__":
     parser.add_argument('rss_url', type=str, help='URL of the RSS feed')
     parser.add_argument('--title', type=str, help='Episode title to fetch', default=None)
     args = parser.parse_args()
-    q.enqueue('tasks.rss_feed_item_requested', args.rss_url, args.title)
+    q.enqueue('rss.feed_item_requested', args.rss_url, args.title)
