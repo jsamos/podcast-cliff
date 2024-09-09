@@ -21,3 +21,19 @@ services:
       - ./data:/data  # Bind mount for the data directory
     depends_on:
       - redis
+
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    ports:
+      - "5001:5001"  # Changed to map host port 5001 to container port 5001
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - API_USERNAME=${API_USERNAME}
+      - API_PASSWORD=${API_PASSWORD}
+    volumes:
+      - ./api:/app
+    depends_on:
+      - redis
