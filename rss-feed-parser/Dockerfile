@@ -9,4 +9,4 @@ COPY . ./
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Ensure the container keeps running
-CMD ["tail", "-f", "/dev/null"]
+CMD ["python", "worker.py"]
