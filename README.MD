@@ -57,7 +57,7 @@ The API will be available at http://localhost:#{API_PORT}. You can use the follo
 ```sh
    curl -X POST http://localhost:5001/transcribe/rss \
    -H "Content-Type: application/json" \
-   -H "Authorization: Basic $(echo -n ${API_TOKEN}: | base64)" \
+   -H "Authorization: Basic $(echo -n ${API_USERNAME}:${API_PASSWORD} | base64)" \
    -d '{
      "rss_url": "https://feeds.captivate.fm/the-game-alex-hormozi/",
      "title": "Why Branding Makes You Money"
