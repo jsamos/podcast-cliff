@@ -1,4 +1,3 @@
-
 # Podcast Cliff RSS
 
 This project is capable of fetching and transcribing media files, usually from a podcast RSS feed. It leverages Redis Queue (RQ) to process tasks asynchronously, and optimizes transription by splitting the audio into chunks allowing for the processing each chunk in parallel.
@@ -45,17 +44,17 @@ Transcription is handled by Vosk API.
 
 ### RSS Feeds
 
-1. Exec into the `message-processor` container to run the `fetch_rss.py` script:
+1. Exec into the `message-processor` container to run the `run_rss.py` script:
 
     ```sh
     docker compose exec message-processor bash
-    python fetch_rss.py <RSS_FEED_URL> [--title "<EPISODE_TITLE>"]
+    python run_rss.py <RSS_FEED_URL> [--title "<EPISODE_TITLE>"]
     ```
 
     Replace `<RSS_FEED_URL>` with the actual URL of the RSS feed you want to fetch. For example:
 
     ```sh
-    python fetch_rss.py https://feeds.captivate.fm/the-game-alex-hormozi/
+    python run_rss.py https://feeds.captivate.fm/the-game-alex-hormozi/
     ```
 
 2. Tail the logs of the `message-processor` to see the processing logs:
@@ -66,7 +65,7 @@ Transcription is handled by Vosk API.
 
 #### Optional Parameters
 
-The `fetch_rss.py` script supports an optional parameter to specify the episode you want to fetch:
+The `run_rss.py` script supports an optional parameter to specify the episode you want to fetch:
 
 - `--title`: Fetches a specific episode by its title. It will use "fuzzy" matching to find the episode, incase you copy pasta badly
 

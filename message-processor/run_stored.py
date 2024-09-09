@@ -4,11 +4,7 @@ from bs4 import BeautifulSoup
 from redis import Redis
 from rq import Queue
 import json
-
-# Establish Redis connection and queue
-redis_conn = Redis(host='redis', port=6379)
-q = Queue('podcast_queue', connection=redis_conn)
-
+from lib.queue import q
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create XML for an episode")

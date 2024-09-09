@@ -1,10 +1,5 @@
 import argparse
-from redis import Redis
-from rq import Queue
-
-redis_conn = Redis(host='redis', port=6379)
-q = Queue('podcast_queue', connection=redis_conn)
-
+from lib.queue import q
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch and enqueue episode item from an RSS feed")
