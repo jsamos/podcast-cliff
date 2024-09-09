@@ -1,8 +1,7 @@
 import os
 import time
-from config import TRANSCRIPTION_CHECK_INTERVAL, TRANSCRIPTION_MAX_WAIT_TIME
 
-def wait_for_files(expected_files):
+def wait_for_files(expected_files, max_wait_time, check_interval):
     start_time = time.time()
 
     while True:
@@ -11,12 +10,12 @@ def wait_for_files(expected_files):
         if all_files_exist:
             print(f"All expected files found")
             return True
-        elif time.time() - start_time > TRANSCRIPTION_MAX_WAIT_TIME:
-            print(f"Timeout occurred after waiting for {TRANSCRIPTION_MAX_WAIT_TIME} seconds.")
+        elif time.time() - start_time > max_wait_time:
+            print(f"Timeout occurred after waiting for {max_wait_time} seconds.")
             return False
         else:
-            print(f"Waiting for files. Checking again in {TRANSCRIPTION_CHECK_INTERVAL} seconds.")
-            time.sleep(TRANSCRIPTION_CHECK_INTERVAL)
+            print(f"Waiting for files. Checking again in {check_interval} seconds.")
+            time.sleep(check_interval)
 
 def add_transcript_path(dicts):
     for i in range(len(dicts)):

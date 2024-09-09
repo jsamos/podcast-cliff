@@ -37,7 +37,7 @@ def item_to_dict(item):
     return {
             'guid': item.find('guid').text,
             'title': item.find('title').text,
-            'creator': item.find('creator').text,
+            #'creator': item.find('creator').text,
             'description': item.find('description').text,
             'pubDate': item.find('pubDate').text,
             'url': item.find('enclosure').get('url'),

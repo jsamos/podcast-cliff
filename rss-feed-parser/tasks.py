@@ -17,6 +17,6 @@ def rss_feed_item_requested(url, title=None):
         dic = item_to_dict(item)
         json_output = json.dumps(dic)
         print(f"Episode: '{dic['title']}' found.")
-        podcast_queue.enqueue('tasks.hosted_media_download_requested', json_output)
+        podcast_queue.enqueue('web.media_download_requested', json_output)
     else:
         print(f"Episode {args.title} not found." if args.title else "No episodes found.")
