@@ -14,6 +14,8 @@ services:
     tty: true
     environment:
       - VOSK_LOG_LEVEL=-1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     volumes:
       - ./message-processor:/app
       - ./data:/data  # Bind mount for the data directory
