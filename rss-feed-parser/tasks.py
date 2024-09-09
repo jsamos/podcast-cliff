@@ -1,30 +1,14 @@
+from lib.files import create_episode_folder, save_episode
 import os
-import re
 import requests
-from bs4 import BeautifulSoup
 from urllib.parse import urlparse
 from redis import Redis
 from rq import Queue
-import xmltodict
 import json
-
 
 redis_conn = Redis(host='redis', port=6379)
 q = Queue('rss_queue', connection=redis_conn)
 podcast_queue = Queue('podcast_queue', connection=redis_conn)
-
-def create_episode_folder(folder):
-    download_folder = "/data"
-    episode_folder = os.path.join(download_folder, folder)
-    os.makedirs(episode_folder, exist_ok=True)
-    return episode_folder
-
-def save_episode(response, path):
-    with open(path, 'wb') as file:
-        for chunk in response.iter_content(chunk_size=1024):
-            if chunk:
-                file.write(chunk)
-    print(f"Episode downloaded successfully: {path}")
 
 def process_episode_item(json_string):
     item_dict = json.loads(json_string)

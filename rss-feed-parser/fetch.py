@@ -1,50 +1,13 @@
-import requests
-from bs4 import BeautifulSoup
+from lib.rss import fetch_podcast_rss, fetch_episode_item
 import argparse
-import re
+import json
 from redis import Redis
 from rq import Queue
-import lxml.etree as ET
-from difflib import SequenceMatcher
 import xmltodict
-import json
 
 redis_conn = Redis(host='redis', port=6379)
 q = Queue('rss_queue', connection=redis_conn)
 
-
-def similarity(a, b):
-    """Calculate the similarity between two strings."""
-    return SequenceMatcher(None, a, b).ratio()
-
-def fetch_podcast_rss(rss_url):
-    response = requests.get(rss_url)
-    response.raise_for_status()
-    return BeautifulSoup(response.content, 'xml')
-
-def fetch_episode_item(soup, search_query=None, similarity_threshold=0.5):
-    items = soup.find_all('item')
-    best_match = None
-    highest_similarity = 0
-
-    for item in items:
-        title = item.find('title').text.lower()
-        search_query_lower = search_query.lower()
-
-        # Calculate similarity
-        current_similarity = similarity(title, search_query_lower)
-
-        # Update best match if current item is more similar than previous best
-        if current_similarity > highest_similarity and current_similarity >= similarity_threshold:
-            best_match = item
-            highest_similarity = current_similarity
-
-    return best_match
-
-def item_to_xml(item):
-    # Extract the XML as a string with namespaces properly defined
-    item_soup = BeautifulSoup(str(item), 'xml')
-    return str(item_soup)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Fetch and enqueue episode item from an RSS feed")
@@ -68,6 +31,7 @@ if __name__ == "__main__":
         }
 
         json_output = json.dumps(dic)
+        print(f"Episode: '{dic['title']}' found.")
         q.enqueue('tasks.process_episode_item', json_output)
     else:
         print(f"Episode {args.title} not found." if args.title else "No episodes found.")

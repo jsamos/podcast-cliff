@@ -1,100 +1,49 @@
 import os
 import time
-import yaml
 from redis import Redis
 from rq import Queue
-import speech_recognition as sr
-from pydub import AudioSegment
-from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
-
-SetLogLevel(-1)
-
-# Load the configuration
-with open("config.yaml", 'r') as stream:
-    config = yaml.safe_load(stream)
-
-AUDIO_FRAGMENT_LENGTH = config['audio_fragment_length']
-TRANSCRIPTION_CHECK_INTERVAL = config['transcription_check_interval']
-TRANSCRIPTION_MAX_WAIT_TIME = config['transcription_max_wait_time']
+from lib.transcription import transcribe_audio
+from lib.audio import create_audio_fragments
+from config import AUDIO_FRAGMENT_LENGTH
+from lib.files import wait_for_files, add_transcript_path
 
 redis_conn = Redis(host='redis', port=6379)
 q = Queue('podcast_queue', connection=redis_conn)
 
 model_path = "vosk-model-small-en-us-0.15"
-model = Model(model_path)
 
 def audio_fragment_saved(json_string):
     item_dict = json.loads(json_string)
-    audio_path = item_dict['path']
-    transcript_path = item_dict['transcript_path']
-    recognizer = sr.Recognizer()
+    transcription = transcribe_audio(item_dict['path'])
 
-    with sr.AudioFile(audio_path) as source:
-        audio_data = recognizer.record(source)
-
-    rec = KaldiRecognizer(model, 16000)
-    rec.AcceptWaveform(audio_data.get_wav_data())
-
-    result = json.loads(rec.Result())
-    transcription = result.get('text', '')
-
-    with open(transcript_path, 'w') as file:
+    with open(item_dict['transcript_path'], 'w') as file:
         file.write(transcription)
 
-    print(f"Transcription saved: {transcript_path}")
+    print(f"Transcription saved: {item_dict['transcript_path']}")
 
 def audio_file_downloaded(json_string):
     item_dict = json.loads(json_string)
     full_length_path = item_dict['files']['full_length']
+    item_dict['files']['fragments'] = create_audio_fragments(full_length_path, AUDIO_FRAGMENT_LENGTH)
+    add_transcript_path(item_dict['files']['fragments'])
 
-    print(f"Processing full length audio file: {full_length_path}")
-
-    audio = AudioSegment.from_mp3(full_length_path).set_frame_rate(16000)
-    duration = len(audio) // 1000
-
-    print(f"Audio duration (seconds): {duration}")
-
-    item_dict['files']['fragments'] = []
-    fragment_length = AUDIO_FRAGMENT_LENGTH * 1000
-
-    for i, start in enumerate(range(0, len(audio), fragment_length)):
-        end = min(start + fragment_length, len(audio))
-        fragment = audio[start:end]
-        fragment_path = f"{os.path.splitext(full_length_path)[0]}_{start // 1000}_{end // 1000}.wav"
-        fragment.export(fragment_path, format="wav")
-        print(f"Created fragment: {fragment_path}")
-        fragment_metadata = {
-            'index': i + 1, 
-            'start': start // 1000, 
-            'end': end // 1000, 
-            'path': fragment_path,
-            'transcript_path': f"{fragment_path}.txt"
-        }
-        q.enqueue('tasks.audio_fragment_saved', json.dumps(fragment_metadata))
-        item_dict['files']['fragments'].append(fragment_metadata)
+    for fragment in item_dict['files']['fragments']:
+        q.enqueue('tasks.audio_fragment_saved', json.dumps(fragment))
 
     json_output = json.dumps(item_dict)
     q.enqueue('tasks.audio_fragment_list_enqueued', json_output)
 
-
 def audio_fragment_list_enqueued(json_string):
     item_dict = json.loads(json_string)
     expected_files = [fragment['transcript_path'] for fragment in item_dict['files']['fragments']]
-    start_time = time.time()
-
-    while True:
-        all_files_exist = all(os.path.exists(file) for file in expected_files)
-        if all_files_exist:
-            print(f"All transcription files found")
-            q.enqueue('tasks.fragment_list_completed', json_string)
-            break
-        elif time.time() - start_time > TRANSCRIPTION_MAX_WAIT_TIME:
-            print(f"Timeout occurred after waiting for {TRANSCRIPTION_MAX_WAIT_TIME} seconds.")
-            break
-        else:
-            print(f"Waiting for transcription files. Checking again in {TRANSCRIPTION_CHECK_INTERVAL} seconds.")
-            time.sleep(TRANSCRIPTION_CHECK_INTERVAL)
+    files_found = wait_for_files(expected_files)
+    
+    if files_found:
+        print(f"All transcription files found")
+        q.enqueue('tasks.fragment_list_completed', json_string)
+    else:
+        print(f"Tramscription timeout occurred.")
 
 def fragment_list_completed(json_string):
     item_dict = json.loads(json_string)
