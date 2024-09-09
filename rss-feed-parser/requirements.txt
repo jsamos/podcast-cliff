@@ -4,4 +4,3 @@ lxml
 redis
 rq
 urllib3
-xmltodict

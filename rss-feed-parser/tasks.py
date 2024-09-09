@@ -1,7 +1,4 @@
-from lib.files import create_episode_folder, save_episode
-import os
-import requests
-from urllib.parse import urlparse
+from lib.rss import fetch_podcast_rss, fetch_episode_item, item_to_dict
 from redis import Redis
 from rq import Queue
 import json
@@ -10,23 +7,16 @@ redis_conn = Redis(host='redis', port=6379)
 q = Queue('rss_queue', connection=redis_conn)
 podcast_queue = Queue('podcast_queue', connection=redis_conn)
 
-def process_episode_item(json_string):
-    item_dict = json.loads(json_string)
-    audio_url = item_dict['url']
+def rss_feed_item_requested(url, title=None):
+    print(f"Fetching episode from {url} and title: {title}")
 
-    if not audio_url:
-        print("Audio URL not found in the item.")
-        return
-
-    filename = os.path.basename(urlparse(audio_url).path)
-    episode_folder = create_episode_folder(filename[:-4])
-    download_path = os.path.join(episode_folder, filename)
-    response = requests.get(audio_url, stream=True)
-
-    if response.status_code != 200:
-        print(f"Failed to download episode. Status code: {response.status_code}")
+    soup = fetch_podcast_rss(url)
+    item = fetch_episode_item(soup, title)
+    
+    if item:
+        dic = item_to_dict(item)
+        json_output = json.dumps(dic)
+        print(f"Episode: '{dic['title']}' found.")
+        podcast_queue.enqueue('tasks.hosted_media_download_requested', json_output)
     else:
-        save_episode(response, download_path)
-        item_dict['files'] = {'full_length': download_path}
-        json_output = json.dumps(item_dict)
-        podcast_queue.enqueue('tasks.audio_file_downloaded', json_output)
+        print(f"Episode {args.title} not found." if args.title else "No episodes found.")

@@ -6,12 +6,35 @@ import json
 from lib.transcription import transcribe_audio
 from lib.audio import create_audio_fragments
 from config import AUDIO_FRAGMENT_LENGTH
-from lib.files import wait_for_files, add_transcript_path
+from lib.files import wait_for_files, add_transcript_path, create_media_folder, save_streamed_media
+import requests
+from urllib.parse import urlparse
 
 redis_conn = Redis(host='redis', port=6379)
 q = Queue('podcast_queue', connection=redis_conn)
 
 model_path = "vosk-model-small-en-us-0.15"
+
+def hosted_media_download_requested(json_string):
+    item_dict = json.loads(json_string)
+    audio_url = item_dict['url']
+
+    if not audio_url:
+        print("Audio URL not found in the item.")
+        return
+
+    filename = os.path.basename(urlparse(audio_url).path)
+    media_folder = create_media_folder(filename[:-4])
+    download_path = os.path.join(media_folder, filename)
+    response = requests.get(audio_url, stream=True)
+
+    if response.status_code != 200:
+        print(f"Failed to download episode. Status code: {response.status_code}")
+    else:
+        save_streamed_media(response, download_path)
+        item_dict['files'] = {'full_length': download_path}
+        json_output = json.dumps(item_dict)
+        q.enqueue('tasks.audio_file_downloaded', json_output)
 
 def audio_fragment_saved(json_string):
     item_dict = json.loads(json_string)

@@ -32,3 +32,16 @@ def fetch_episode_item(soup, search_query=None, similarity_threshold=0.5):
             highest_similarity = current_similarity
 
     return best_match
+
+def item_to_dict(item):
+    return {
+            'guid': item.find('guid').text,
+            'title': item.find('title').text,
+            'creator': item.find('creator').text,
+            'description': item.find('description').text,
+            'pubDate': item.find('pubDate').text,
+            'url': item.find('enclosure').get('url'),
+            'length': item.find('enclosure').get('length'),
+            'duration': item.find('itunes:duration').text,
+            'type': item.find('enclosure').get('type')
+    }
