@@ -1,7 +1,9 @@
 
-# Podcast RSS Feed Processor
+# Podcast Cliff RSS
 
-This project fetches podcast episodes from an RSS feed, enqueues metadata processing tasks using Redis Queue (RQ), and processes these tasks asynchronously. The setup involves two main services: `rss-feed-parser` and `message-processor`, along with a Redis service for task queuing. The app also splits downloaded audio files into smaller fragments of configurable length.
+This project is capable of fetching and transcribing media files, usually from a podcast RSS feed. It leverages Redis Queue (RQ) to process tasks asynchronously, and optimizes transription by splitting the audio into chunks allowing for the processing each chunk in parallel.
+
+Transcription is handled by Vosk API.
 
 ## Table of Contents
 
@@ -23,8 +25,8 @@ This project fetches podcast episodes from an RSS feed, enqueues metadata proces
 1. Clone the repository:
 
     ```sh
-    git clone https://github.com/yourusername/podcast-rss-feed-processor.git
-    cd podcast-rss-feed-processor
+    git clone https://github.com/jsamos/podcast-cliff.git
+    cd podcast-cliff
     ```
 
 2. Build the Docker containers:
@@ -41,73 +43,54 @@ This project fetches podcast episodes from an RSS feed, enqueues metadata proces
     docker-compose up
     ```
 
-2. Exec into the `rss-feed-parser` container to run the `fetch.py` script:
+### RSS Feeds
+
+1. Exec into the `message-processor` container to run the `fetch_rss.py` script:
 
     ```sh
-    docker-compose exec rss-feed-parser /bin/sh
-    python fetch.py <RSS_FEED_URL>
+    docker compose exec message-processor bash
+    python fetch_rss.py <RSS_FEED_URL> [--title "<EPISODE_TITLE>"]
     ```
 
     Replace `<RSS_FEED_URL>` with the actual URL of the RSS feed you want to fetch. For example:
 
     ```sh
-    python fetch.py https://feeds.captivate.fm/the-game-alex-hormozi/
+    python fetch_rss.py https://feeds.captivate.fm/the-game-alex-hormozi/
     ```
 
-3. Tail the logs of the `message-processor` to see the processing logs:
+2. Tail the logs of the `message-processor` to see the processing logs:
 
     ```sh
-    docker-compose logs -f message-processor
+    docker compose logs -f message-processor
     ```
 
-## Optional Parameters
+#### Optional Parameters
 
-The `fetch.py` script supports an optional parameter to specify the episode number you want to fetch:
+The `fetch_rss.py` script supports an optional parameter to specify the episode you want to fetch:
 
-- `--episode`: Fetches a specific episode by its number.
+- `--title`: Fetches a specific episode by its title. It will use "fuzzy" matching to find the episode, incase you copy pasta badly
 
-### Example:
+#### Example:
 
-To fetch episode number 10 from the RSS feed:
+To fetch episode by title from the RSS feed:
 
 ```sh
-python fetch.py https://feeds.captivate.fm/the-game-alex-hormozi/ --episode 744
+python fetch_rss.py https://feeds.captivate.fm/the-game-alex-hormozi/ --title 'Why Branding Makes You Money'
 ```
 
-### Default Behavior:
+#### Default Behavior:
 
-If the `--episode` parameter is not provided, the script will fetch the latest episode (the first item in the RSS feed).
+If the `--title` parameter is not provided, the script will fetch the latest episode (the first item in the RSS feed).
 
-## Capabilities
+### Local files:
 
-- **Fetch Episodes**: The app fetches podcast episodes from a provided RSS feed URL.
-- **Download Audio Files**: It downloads the full-length audio file of the specified or latest episode.
-- **Process Metadata**: The app processes metadata of the episodes and updates the RSS feed item XML.
-- **Split Audio Files**: The downloaded audio file is split into smaller fragments of a configurable length.
-- **Store Files**: The full-length audio file and its fragments are stored in the `data` directory, which is shared between the host machine and the Docker containers.
+The app also supports transcribing local files using the run_stored.py script:
 
-## Directory Structure
-
-```plaintext
-.
-├── data                       # This will be shared between host and containers
-├── docker-compose.yml
-├── rss-feed-parser
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── fetch.py
-├── message-processor
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── tasks.py
-│   ├── worker.py
-│   └── config.yaml
+```sh
+python run_stored.py <PATH_TO_FILE>
 ```
 
-- **rss-feed-parser**: Contains the script to fetch podcast episodes and enqueue tasks.
-- **message-processor**: Contains the worker that processes the tasks and downloads the audio files, as well as splitting them into fragments.
-- **docker-compose.yml**: Docker Compose configuration file to set up the services.
-- **data**: Shared directory between the host machine and Docker containers for storing audio files.
+it currently supports mp3 and wav files.
 
 ## Contributing
 

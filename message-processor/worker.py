@@ -2,7 +2,7 @@ import os
 from rq import Worker, Queue, Connection
 from redis import Redis
 
-listen = ['default']
+listen = ['podcast_queue']
 redis_conn = Redis(host='redis', port=6379)
 
 if __name__ == '__main__':

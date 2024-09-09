@@ -1,16 +1,26 @@
 version: '3.8'
 
 services:
-  rss-feed-parser:
-    build: ./rss-feed-parser
-    container_name: rss-feed-parser
-    stdin_open: true
-    tty: true
-    volumes:
-      - ./rss-feed-parser:/app
-      - ./data:/data  # Bind mount for the data directory
-    depends_on:
-      - redis
+  # rss-feed-parser:
+  #   build: ./rss-feed-parser
+  #   container_name: rss-feed-parser
+  #   stdin_open: true
+  #   tty: true
+  #   volumes:
+  #     - ./rss-feed-parser:/app
+  #     - ./data:/data  # Bind mount for the data directory
+  #   depends_on:
+  #     - redis
+  # localfile-loader:
+  #   build: ./localfile-loader
+  #   container_name: localfile-loader
+  #   stdin_open: true
+  #   tty: true
+  #   volumes:
+  #     - ./localfile-loader:/app
+  #     - ./data:/data  
+  #   depends_on:
+  #     - redis
 
   redis:
     image: "redis:alpine"
