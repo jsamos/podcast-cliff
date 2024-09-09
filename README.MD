@@ -15,6 +15,23 @@ Transcription is handled by Vosk API.
 - [Contributing](#contributing)
 - [License](#license)
 
+## Application Flow
+1. feed_item_requested(url, title=None):
+   - Fetches episode metadata and enqueues a media download request.
+2. media_download_requested(json_string):
+   - Downloads the media from the provided URL and saves it to disk.
+   - Enqueues the task media.new_file_present.
+3. new_file_present(json_string):
+   - Simply enqueues audio.new_file_present for further processing.
+4. fragment_saved(json_string):
+   - Receives saved fragment info, transcribes audio using transcribe_audio.
+   - Enqueues file.fragment_list_completed when all transcription files are ready.
+5. fragment_list_completed(json_string):
+   - Compiles the full transcript from the audio fragments and saves it.
+   - Enqueues file.transcript_file_saved.
+6. transcript_file_saved(json_string):
+   - Cleans up the media and transcript files by removing them from the disk.
+
 ## Prerequisites
 
 - Docker and Docker Compose installed on your machine.
