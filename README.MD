@@ -36,6 +36,27 @@ Transcription is handled by Vosk API.
 
 ## Usage
 
+### API
+
+The API will be available at http://localhost:5001. You can use the following endpoint to enqueue a transcription job:
+Endpoint: /transcribe/rss
+Method: POST
+Content-Type: application/json
+Authentication: Basic Auth (use the API_TOKEN as the username, leave the password blank)
+Body parameters:
+rss_url (required): The URL of the RSS feed
+title (optional): The title of the specific episode to transcribe
+
+```sh
+   curl -X POST http://localhost:5001/transcribe/rss \
+   -H "Content-Type: application/json" \
+   -H "Authorization: Basic $(echo -n ${API_TOKEN}: | base64)" \
+   -d '{
+     "rss_url": "https://feeds.captivate.fm/the-game-alex-hormozi/",
+     "title": "Why Branding Makes You Money"
+   }'
+```
+
 1. Start the services:
 
     ```sh
