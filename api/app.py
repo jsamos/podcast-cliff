@@ -53,13 +53,11 @@ def ping():
 
 @app.route('/transcribe/rss', methods=['POST'])
 @requires_auth
-def publish_message():
+def transcribe_rss():
     data = request.json
-    return jsonify({"message": data}), 200
-    
-    job = q.enqueue('process_message', data['message'])
+    job = q.enqueue('rss.feed_item_requested', data['rss_url'], data['title'])
     logger.info(f"Job enqueued with ID: {job.id}")
     return jsonify({"job_id": job.id}), 202
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    app.run(host='0.0.0.0', port=os.environ.get('API_PORT'), debug=True)
