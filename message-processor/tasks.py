@@ -15,16 +15,6 @@ import wave
 
 SetLogLevel(-1)
 
-def sanitize_title(title, max_length=50):
-    """Sanitize the title to be filesystem safe, limit its length, and allow only alphanumeric characters."""
-    # Replace any character that is not a letter or a number with a hyphen
-    sanitized = re.sub(r'[^a-zA-Z0-9]', '-', title)
-    # Replace multiple hyphens with a single hyphen
-    sanitized = re.sub(r'-+', '-', sanitized)
-    # Trim leading or trailing hyphens
-    sanitized = sanitized.strip('-')
-    return sanitized[:max_length]
-
 # Load the configuration
 with open("config.yaml", 'r') as stream:
     config = yaml.safe_load(stream)
