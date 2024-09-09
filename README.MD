@@ -64,7 +64,9 @@ The API will be available at http://localhost:#{API_PORT}. You can use the follo
    }'
 ```
 
-### RSS Feeds
+### CLI
+
+#### RSS Feeds
 
 1. Exec into the `message-processor` container to run the `run_rss.py` script:
 
@@ -85,13 +87,13 @@ The API will be available at http://localhost:#{API_PORT}. You can use the follo
     docker compose logs -f message-processor
     ```
 
-#### Optional Parameters
+##### Optional Parameters
 
 The `run_rss.py` script supports an optional parameter to specify the episode you want to fetch:
 
 - `--title`: Fetches a specific episode by its title. It will use "fuzzy" matching to find the episode, incase you copy pasta badly
 
-#### Example:
+##### Example:
 
 To fetch episode by title from the RSS feed:
 
@@ -99,11 +101,11 @@ To fetch episode by title from the RSS feed:
 python fetch_rss.py https://feeds.captivate.fm/the-game-alex-hormozi/ --title 'Why Branding Makes You Money'
 ```
 
-#### Default Behavior:
+##### Default Behavior:
 
 If the `--title` parameter is not provided, the script will fetch the latest episode (the first item in the RSS feed).
 
-### Local files:
+#### Local files:
 
 The app also supports transcribing local files using the run_stored.py script:
 
