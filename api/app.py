@@ -11,6 +11,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+app.config['DEBUG'] = os.environ.get('FLASK_DEBUG') == '1'
 
 # Redis and RQ setup
 redis_conn = Redis(host=os.environ.get('REDIS_HOST'), port=os.environ.get('REDIS_PORT'))
@@ -60,4 +61,4 @@ def transcribe_rss():
     return jsonify({"job_id": job.id}), 202
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=os.environ.get('API_PORT'), debug=True)
+    app.run()
