@@ -36,6 +36,12 @@ Transcription is handled by Vosk API.
 
 ## Usage
 
+1. Start the services:
+
+    ```sh
+    docker-compose up
+    ```
+
 ### API
 
 The API will be available at http://localhost:5001. You can use the following endpoint to enqueue a transcription job:
@@ -57,12 +63,6 @@ The API will be available at http://localhost:5001. You can use the following en
      "title": "Why Branding Makes You Money"
    }'
 ```
-
-1. Start the services:
-
-    ```sh
-    docker-compose up
-    ```
 
 ### RSS Feeds
 
