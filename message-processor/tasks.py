@@ -1,17 +1,12 @@
 import os
-import re
 import time
 import yaml
-import requests
-from bs4 import BeautifulSoup
-from urllib.parse import urlparse
 from redis import Redis
 from rq import Queue
 import speech_recognition as sr
 from pydub import AudioSegment
 from vosk import Model, KaldiRecognizer, SetLogLevel
 import json
-import wave
 
 SetLogLevel(-1)
 
