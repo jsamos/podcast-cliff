@@ -31,7 +31,8 @@ services:
     environment:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - API_TOKEN=${API_TOKEN}
+      - API_USERNAME=${API_USERNAME}
+      - API_PASSWORD=${API_PASSWORD}
       - API_PORT=${API_PORT}
     volumes:
       - ./api:/app

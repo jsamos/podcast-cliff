@@ -17,8 +17,8 @@ redis_conn = Redis(host=os.environ.get('REDIS_HOST'), port=os.environ.get('REDIS
 q = Queue('podcast_queue', connection=redis_conn)
 
 # Basic Auth setup
-def check_auth(token):
-    return token == os.environ.get('API_TOKEN')
+def check_auth(username, password):
+    return username == os.environ.get('API_USERNAME') and password == os.environ.get('API_PASSWORD')
 
 def authenticate():
     return jsonify({"error": "Authentication required"}), 401, {'WWW-Authenticate': 'Basic realm="API"'}
@@ -35,12 +35,12 @@ def requires_auth(f):
         encoded_credentials = auth_header.split(' ')[1]
         try:
             decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
-            token = decoded_credentials.split(':')[0]  # We're using the username part as the token
+            username, password = decoded_credentials.split(':')
         except:
             logger.warning("Failed to decode credentials")
             return authenticate()
         
-        if not check_auth(token):
+        if not check_auth(username, password):
             logger.warning("Invalid token provided")
             return authenticate()
         
