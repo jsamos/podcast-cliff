@@ -4,8 +4,10 @@ services:
   redis:
     image: "redis:alpine"
     container_name: redis
-    ports:
-      - "6379:6379"
+    expose:
+      - "6379"
+    networks:
+      - internal
 
   message-processor:
     build: ./message-processor
@@ -21,6 +23,8 @@ services:
       - ./data:/data  # Bind mount for the data directory
     depends_on:
       - redis
+    networks:
+      - internal
 
   api:
     build: ./api
@@ -37,3 +41,9 @@ services:
       - ./api:/app
     depends_on:
       - redis
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
