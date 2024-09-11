@@ -22,10 +22,15 @@ class Events:
             update_job_status(job_id, 'media_download_completed', progress='12%')
             Events.enqueue_next_task('media.new_file_present', dic_data)
         elif event_type == 'fragments_created':
+            Events.enqueue_next_task('pending.file_list_enqueued', dic_data)
             for fragment in dic_data['files']['fragments']:
                 Events.enqueue_next_task('audio.fragment_saved', fragment)
             update_job_status(job_id, 'transcription_started', progress='20%')
-            Events.enqueue_next_task('pending.file_list_enqueued', dic_data)
+        elif event_type == 'transcription_in_progress':
+            ratio = dic_data.get('progress', 0)
+            progress = 20 + (75 * ratio) 
+            print(f'transcription_in_progress: {progress:.2f}%')
+            update_job_status(job_id, 'transcription_in_progress', progress=f'{progress:.2f}%')
         elif event_type == 'transcription_fragments_created':
             update_job_status(job_id, 'transcription_progess', progress='95%')
             Events.enqueue_next_task('file.fragment_list_completed', dic_data)

@@ -1,21 +1,30 @@
 import os
 import time
+from lib.events import Events
 
-def wait_for_files(expected_files, max_wait_time, check_interval):
-    start_time = time.time()
+class FileWaiter:
+    def __init__(self, job_id, max_wait_time, check_interval):
+        self.job_id = job_id
+        self.max_wait_time = max_wait_time
+        self.check_interval = check_interval
 
-    while True:
-        all_files_exist = all(os.path.exists(file) for file in expected_files)
+    def wait_for_files(self, expected_files):
+        start_time = time.time()
 
-        if all_files_exist:
-            print(f"All expected files found")
-            return True
-        elif time.time() - start_time > max_wait_time:
-            print(f"Timeout occurred after waiting for {max_wait_time} seconds.")
-            return False
-        else:
-            print(f"Waiting for files. Checking again in {check_interval} seconds.")
-            time.sleep(check_interval)
+        while True:
+            existing_files_count = sum(1 for file in expected_files if os.path.exists(file))
+            all_files_exist = existing_files_count == len(expected_files)
+
+            if all_files_exist:
+                print(f"All expected files found for job {self.job_id}")
+                return True
+            elif time.time() - start_time > self.max_wait_time:
+                print(f"Timeout occurred after waiting for {self.max_wait_time} seconds for job {self.job_id}.")
+                return False
+            else:
+                Events.fire('transcription_in_progress', {'job_id': self.job_id, 'progress': existing_files_count/len(expected_files)})
+                print(f"Waiting for files for job {self.job_id}. Checking again in {self.check_interval} seconds.")
+                time.sleep(self.check_interval)
 
 def add_transcript_path(dicts):
     for i in range(len(dicts)):
