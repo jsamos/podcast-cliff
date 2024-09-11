@@ -19,6 +19,7 @@ def fragment_list_completed(json_string):
             with open(transcript_path, 'r') as fragment_file:
                 transcript_file.write(fragment_file.read() + "\n")
 
+    item_dict['files']['transcript_file_path'] = transcript_file_path
     print(f"Combined transcript saved: {transcript_file_path}")
     Events.fire('transcript_file_saved', item_dict)
     json_output = json.dumps(item_dict)
@@ -26,14 +27,13 @@ def fragment_list_completed(json_string):
 
 def transcript_file_saved(json_string):
     item_dict = json.loads(json_string)
-
     files = item_dict['files']
     full_length_path = files['full_length']
     fragments = files['fragments']
     fragment_files = [fragment['path'] for fragment in fragments]
-    transcript_files = [fragment['transcript_path'] for fragment in fragments]
+    fragment_transcript_files = [fragment['transcript_path'] for fragment in fragments]
 
-    for file_path in [full_length_path] + fragment_files + transcript_files:
+    for file_path in [full_length_path] + fragment_files + fragment_transcript_files:
         if os.path.exists(file_path):
             os.remove(file_path)
             print(f"Deleted file: {file_path}")

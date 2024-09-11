@@ -16,6 +16,9 @@ def update_job_status(job_id, status, progress=None, details=None):
     if progress:
         update_data["progress"] = progress
     
+    if details:
+        update_data["details"] = details
+    
     redis_conn.hset(job_key, mapping=update_data)
     
     # Add a detailed update to the list

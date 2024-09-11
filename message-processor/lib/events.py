@@ -30,7 +30,8 @@ class Events:
             update_job_status(job_id, 'transcription_progess', progress='95%')
             Events.enqueue_next_task('file.fragment_list_completed', dic_data)
         elif event_type == 'transcript_file_saved':
-            update_job_status(job_id, 'transcript_ready', progress='100%')
+            transcript_file_path = dic_data['files']['transcript_file_path']
+            update_job_status(job_id, 'transcript_ready', progress='100%', details=transcript_file_path)
     @classmethod
     def enqueue_next_task(cls, task, dic_data):
         json_output = json.dumps(dic_data)

@@ -80,6 +80,18 @@ def check_job_status(job_id):
     if job_status is None:
         return jsonify({"error": "Job not found"}), 404
     
+    if 'details' in job_status and isinstance(job_status['details'], str):
+        file_path = job_status['details']
+
+        if os.path.isfile(file_path):
+            try:
+                with open(file_path, 'r') as file:
+                    file_contents = file.read()
+                job_status['details'] = file_contents
+            except Exception as e:
+                logger.error(f"Error reading file {file_path}: {str(e)}")
+                job_status['details'] = f"Transcript not found"
+    
     return jsonify(job_status), 200
 
 if __name__ == '__main__':
