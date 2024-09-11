@@ -1,6 +1,7 @@
 import json
 from lib.queue import q
 import os
+from lib.events import Events
 
 def fragment_list_completed(json_string):
     item_dict = json.loads(json_string)
@@ -19,7 +20,7 @@ def fragment_list_completed(json_string):
                 transcript_file.write(fragment_file.read() + "\n")
 
     print(f"Combined transcript saved: {transcript_file_path}")
-
+    Events.fire('transcript_file_saved', item_dict)
     json_output = json.dumps(item_dict)
     q.enqueue('file.transcript_file_saved', json_output)
 

@@ -3,7 +3,7 @@ import requests
 from urllib.parse import urlparse
 import os
 from lib.files import create_media_folder, save_streamed_media
-from lib.queue import q
+from lib.events import Events
 
 def media_download_requested(json_string):
     item_dict = json.loads(json_string)
@@ -16,6 +16,7 @@ def media_download_requested(json_string):
     filename = os.path.basename(urlparse(media_url).path)
     media_folder = create_media_folder(filename[:-4])
     download_path = os.path.join(media_folder, filename)
+    Events.fire('media_dowloading', item_dict)
     response = requests.get(media_url, stream=True)
 
     if response.status_code != 200:
@@ -23,5 +24,4 @@ def media_download_requested(json_string):
     else:
         save_streamed_media(response, download_path)
         item_dict['files'] = {'full_length': download_path}
-        json_output = json.dumps(item_dict)
-        q.enqueue('media.new_file_present', json_output)
+        Events.fire('media_download_completed', item_dict)
