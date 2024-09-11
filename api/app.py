@@ -5,6 +5,9 @@ from redis import Redis
 from rq import Queue
 import os
 from functools import wraps
+import uuid
+import json
+from lib.status import get_job_status, create_job_status
 
 # Set up basic logging
 logging.basicConfig(level=logging.INFO)
@@ -56,9 +59,40 @@ def ping():
 @requires_auth
 def transcribe_rss():
     data = request.json
-    job = q.enqueue('rss.feed_item_requested', data['rss_url'], data['title'])
-    logger.info(f"Job enqueued with ID: {job.id}")
-    return jsonify({"job_id": job.id}), 202
+    job_id = str(uuid.uuid4())
+    
+    dic = {
+        'job_id': job_id,
+        'rss_url': data['rss_url'],
+        'title': data['title']
+    }
+
+    json_output = json.dumps(dic)
+    job = q.enqueue('rss.feed_item_requested', json_output)
+    logger.info(f"Job enqueued with ID: {job_id}")
+    create_job_status(job_id)
+    return jsonify({"job_id": job_id}), 202
+
+@app.route('/job/<job_id>', methods=['GET'])
+@requires_auth
+def check_job_status(job_id):
+    job_status = get_job_status(job_id)
+    if job_status is None:
+        return jsonify({"error": "Job not found"}), 404
+    
+    if 'details' in job_status and isinstance(job_status['details'], str):
+        file_path = job_status['details']
+
+        if os.path.isfile(file_path):
+            try:
+                with open(file_path, 'r') as file:
+                    file_contents = file.read()
+                job_status['details'] = file_contents
+            except Exception as e:
+                logger.error(f"Error reading file {file_path}: {str(e)}")
+                job_status['details'] = f"Transcript not found"
+    
+    return jsonify(job_status), 200
 
 if __name__ == '__main__':
     app.run()

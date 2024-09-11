@@ -39,6 +39,7 @@ services:
       - API_PASSWORD=${API_PASSWORD}
     volumes:
       - ./api:/app
+      - ./data:/data
     depends_on:
       - redis
     networks:

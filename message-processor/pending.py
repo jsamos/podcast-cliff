@@ -2,6 +2,7 @@ from lib.files import wait_for_files
 from lib.queue import q
 import json
 from config import TRANSCRIPTION_CHECK_INTERVAL, TRANSCRIPTION_MAX_WAIT_TIME
+from lib.events import Events
 
 def file_list_enqueued(json_string):
     item_dict = json.loads(json_string)
@@ -10,6 +11,6 @@ def file_list_enqueued(json_string):
     
     if files_found:
         print(f"All transcription files found")
-        q.enqueue('file.fragment_list_completed', json_string)
+        Events.fire('transcription_fragments_created', item_dict)
     else:
         print(f"Transcription timeout occurred.")
