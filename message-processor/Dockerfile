@@ -1,24 +1,29 @@
-# Stage 1: Build the base image using python:3.9-slim to install dependencies
-FROM python:3.9-slim AS build
-
-# Set the working directory
-WORKDIR /app
-
-# Install system dependencies (ffmpeg and libatomic1)
-RUN apt-get update && apt-get install -y ffmpeg libatomic1
-
-# Copy requirements.txt and install Python dependencies
-COPY requirements.txt requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application code
-COPY . .
-
-# Stage 2: Start with the AWS Lambda Python 3.9 base image
+# Start with the AWS Lambda Python 3.9 base image
 FROM public.ecr.aws/lambda/python:3.9
 
-# Copy installed dependencies from the build stage
-COPY --from=build /app /var/task
+# Install system dependencies and download static ffmpeg
+RUN yum update -y && \
+    yum install -y libatomic wget tar xz && \
+    wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
+    tar xvf ffmpeg-release-amd64-static.tar.xz && \
+    mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ && \
+    rm -rf ffmpeg-*-amd64-static* && \
+    yum remove -y wget tar xz && \
+    yum clean all && \
+    rm -rf /var/cache/yum
 
-# Set the Lambda entry point to the handler function (adjust this to your handler)
+# Set the working directory
+WORKDIR /var/task
+
+# Copy requirements.txt and install Python dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the application code
+COPY . .
+
+# Set the Lambda entry point to the handler function
 CMD ["worker.lambda_handler"]
+
+# For testing: verify ffmpeg and Python dependencies (remove for production)
+RUN ffmpeg -version && pip list
