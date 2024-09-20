@@ -9,16 +9,16 @@ def lambda_handler(event, context):
     json_string = json.dumps(event)
     logger.info("Received Lambda Event: " + json_string)
 
-    url = dic['rss_url']
-    title = dic['title']
+    url = event['data']['rss_url']
+    title = event['data']['title']
     logger.info(f"Fetching episode from {url} and title: {title}")
     soup = fetch_podcast_rss(url)
     item = fetch_episode_item(soup, title)
     
     if item:
-        dic = {**dic, **item_to_dict(item)} 
-        logger.info("Found episode: " + json.dumps(dic))
-        return dic
+        event['data'] = {**event['data'], **item_to_dict(item)} 
+        logger.info("Found episode: " + json.dumps(event))
+        return event
     else:
        logger.info("No episode found")
-       return None
+       return {"error": "No episode found"}
