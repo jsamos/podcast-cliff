@@ -1,13 +1,63 @@
+from abc import ABC, abstractmethod
 import os
 from pydub import AudioSegment
+import boto3
+from io import BytesIO
+import logging
 
-def create_audio_fragments(full_length_path, fragment_length):
-    print(f"Processing full length audio file: {full_length_path}")
+# Add this logger configuration
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
-    audio = AudioSegment.from_mp3(full_length_path).set_frame_rate(16000)
+class AudioFileManager(ABC):
+    @abstractmethod
+    def load_audio(self):
+        pass
+
+    @abstractmethod
+    def save_fragment(self, fragment, fragment_path):
+        pass
+
+class LocalAudioFileManager(AudioFileManager):
+    def __init__(self, file_path):
+        self.file_path = file_path
+
+    def load_audio(self):
+        return AudioSegment.from_mp3(self.file_path).set_frame_rate(16000)
+
+    def save_fragment(self, fragment, fragment_path):
+        fragment.export(fragment_path, format="wav")
+        return fragment_path
+
+class S3AudioFileManager(AudioFileManager):
+    def __init__(self, s3_uri):
+        self.s3_uri = s3_uri
+        self.s3_client = boto3.client('s3')
+        self.bucket_name = s3_uri.split('//')[1].split('/')[0]
+        self.s3_key = '/'.join(s3_uri.split('//')[1].split('/')[1:])
+
+    def load_audio(self):
+        response = self.s3_client.get_object(Bucket=self.bucket_name, Key=self.s3_key)
+        audio_data = response['Body'].read()
+        logger.info(f"Audio data loaded from S3")
+        return AudioSegment.from_mp3(BytesIO(audio_data)).set_frame_rate(16000)
+
+    def save_fragment(self, fragment, fragment_path):
+        fragment_s3_key = f"fragments/{os.path.basename(fragment_path)}"
+        self.s3_client.put_object(
+            Bucket=self.bucket_name,
+            Key=fragment_s3_key,
+            Body=fragment.export(format="wav").read()
+        )
+        return f"s3://{self.bucket_name}/{fragment_s3_key}"
+
+def create_audio_fragments(audio_manager, fragment_length):
+    logger.info("Processing audio file")
+
+    audio = audio_manager.load_audio()
     duration = len(audio) // 1000
 
-    print(f"Audio duration (seconds): {duration}")
+    logger.info(f"Audio duration (seconds): {duration}")
 
     fragments = []
     fragment_length_ms = fragment_length * 1000
@@ -15,14 +65,14 @@ def create_audio_fragments(full_length_path, fragment_length):
     for i, start in enumerate(range(0, len(audio), fragment_length_ms)):
         end = min(start + fragment_length_ms, len(audio))
         fragment = audio[start:end]
-        fragment_path = f"{os.path.splitext(full_length_path)[0]}_{start // 1000}_{end // 1000}.wav"
-        fragment.export(fragment_path, format="wav")
-        print(f"Created fragment: {fragment_path}")
+        fragment_path = f"{start // 1000}_{end // 1000}.wav"
+        saved_path = audio_manager.save_fragment(fragment, fragment_path)
+        logger.info(f"Created fragment: {saved_path}")
         fragment_metadata = {
             'index': i + 1, 
             'start': start // 1000, 
             'end': end // 1000, 
-            'path': fragment_path
+            'path': saved_path
         }
         fragments.append(fragment_metadata)
 
