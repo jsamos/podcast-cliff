@@ -4,6 +4,7 @@ from pydub import AudioSegment
 import boto3
 from io import BytesIO
 import logging
+from lib.files import S3URI
 
 # Add this logger configuration
 logger = logging.getLogger()
@@ -31,25 +32,24 @@ class LocalAudioFileManager(AudioFileManager):
 
 class S3AudioFileManager(AudioFileManager):
     def __init__(self, s3_uri):
-        self.s3_uri = s3_uri
+        self.uri = S3URI(s3_uri)
         self.s3_client = boto3.client('s3')
-        self.bucket_name = s3_uri.split('//')[1].split('/')[0]
-        self.s3_key = '/'.join(s3_uri.split('//')[1].split('/')[1:])
 
     def load_audio(self):
-        response = self.s3_client.get_object(Bucket=self.bucket_name, Key=self.s3_key)
+        response = self.s3_client.get_object(Bucket=self.uri.bucket, Key=self.uri.key)
         audio_data = response['Body'].read()
         logger.info(f"Audio data loaded from S3")
         return AudioSegment.from_mp3(BytesIO(audio_data)).set_frame_rate(16000)
 
-    def save_fragment(self, fragment, fragment_path):
-        fragment_s3_key = f"fragments/{os.path.basename(fragment_path)}"
+    def save_fragment(self, fragment, name):
+        key = self.uri.prefix + '/' + name
         self.s3_client.put_object(
-            Bucket=self.bucket_name,
-            Key=fragment_s3_key,
+            Bucket=self.uri.bucket,
+            Key=key,
             Body=fragment.export(format="wav").read()
         )
-        return f"s3://{self.bucket_name}/{fragment_s3_key}"
+
+        return f"s3://{self.uri.bucket}/{key}"
 
 def create_audio_fragments(audio_manager, fragment_length):
     logger.info("Processing audio file")
@@ -65,15 +65,17 @@ def create_audio_fragments(audio_manager, fragment_length):
     for i, start in enumerate(range(0, len(audio), fragment_length_ms)):
         end = min(start + fragment_length_ms, len(audio))
         fragment = audio[start:end]
-        fragment_path = f"{start // 1000}_{end // 1000}.wav"
-        saved_path = audio_manager.save_fragment(fragment, fragment_path)
-        logger.info(f"Created fragment: {saved_path}")
+        fragment_name = f"{start // 1000}_{end // 1000}.wav"
+        save_uri = audio_manager.save_fragment(fragment, fragment_name)
+        logger.info(f"Created fragment: {save_uri}")
+
         fragment_metadata = {
             'index': i + 1, 
             'start': start // 1000, 
             'end': end // 1000, 
-            'path': saved_path
+            'path': save_uri
         }
+
         fragments.append(fragment_metadata)
 
     return fragments

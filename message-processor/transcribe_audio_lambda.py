@@ -4,6 +4,7 @@ import boto3
 import tempfile
 import os
 from lib.transcription import transcribe_audio
+from lib.files import S3URI
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -11,12 +12,10 @@ logger.setLevel(logging.INFO)
 s3_client = boto3.client('s3')
 
 def download_from_s3(s3_uri):
-    bucket_name = s3_uri.split('//')[1].split('/')[0]
-    s3_key = '/'.join(s3_uri.split('//')[1].split('/')[1:])
-    
+    uri = S3URI(s3_uri)
     with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as temp_file:
         temp_path = temp_file.name
-        s3_client.download_file(bucket_name, s3_key, temp_path)
+        s3_client.download_file(uri.bucket, uri.key, temp_path)
     
     return temp_path
 
@@ -31,13 +30,18 @@ def transcribe_fragment(event):
     
     return transcript
 
+def put_transcript_in_s3(transcript, s3_uri):
+    s3_uri = S3URI(s3_uri)
+    s3_client.put_object(Bucket=s3_uri.bucket, Key=s3_uri.key, Body=transcript)
+
 def lambda_handler(event, context):
     try:
         logger.info(f"Received event: {event}")
-        
         transcript = transcribe_fragment(event)
+        transcript_path = f"{event['path']}.txt"
+        put_transcript_in_s3(transcript, transcript_path)
         
-        return transcript
+        return transcript_path
     except Exception as e:
         logger.error(f"Error processing fragment: {str(e)}")
         raise e
@@ -47,6 +51,6 @@ def lambda_handler(event, context):
 #     "index": 1,
 #     "start": 0,
 #     "end": 60,
-#     "path": "s3://jsamos-podcast-cliff/fragments/0_60.wav"
+#     "path": "s3://jsamos-podcast-cliff/temp/1243243214/0_60.wav"
 # }
 

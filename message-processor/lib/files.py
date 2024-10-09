@@ -2,6 +2,13 @@ import os
 import time
 from lib.events import Events
 
+class S3URI:
+    def __init__(self, uri):
+        self.uri = uri
+        self.bucket = uri.split('//')[1].split('/')[0]
+        self.key = '/'.join(uri.split('//')[1].split('/')[1:])
+        self.prefix = os.path.dirname(self.key)
+
 class FileWaiter:
     def __init__(self, job_id, max_wait_time, check_interval):
         self.job_id = job_id
@@ -43,3 +50,12 @@ def save_streamed_media(response, path):
             if chunk:
                 file.write(chunk)
     print(f"Media downloaded successfully: {path}")
+
+def ensure_temp_prefix(data):
+    existing_prefix = data.get('temp_prefix')
+    if existing_prefix:
+        return existing_prefix
+    
+    media_guid = data.get('guid')
+    data['temp_prefix'] = f"temp/{media_guid}"
+    return data['temp_prefix']
