@@ -18,6 +18,7 @@ def lambda_handler(event, context):
     if item:
         event['data'] = {**event['data'], **item_to_dict(item)} 
         logger.info("Found episode: " + json.dumps(event))
+        event['metadata']['steps'].append('RSSFeedProcessed')
         return event
     else:
        logger.info("No episode found")
