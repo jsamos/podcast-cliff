@@ -36,13 +36,8 @@ def lambda_handler(event, context):
                     logger.info(f"Deleted fragment file: {s3_key}")
                     deleted_files.append(s3_key)
 
-        return {
-            'statusCode': 200,
-            'body': json.dumps({
-                'message': 'Files deleted successfully',
-                'deleted_files': deleted_files
-            })
-        }
+        event['metadata']['steps'].append('FilesCleaned')
+        return event
 
     except Exception as e:
         logger.error(f"Error: {str(e)}")

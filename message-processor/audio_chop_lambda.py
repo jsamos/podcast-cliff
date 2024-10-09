@@ -28,6 +28,7 @@ def lambda_handler(event, context):
 
         logger.info(f"Created {len(fragments)} audio fragments")
         data['files']['fragments'] = fragments
+        event['metadata']['steps'].append('AudioChopped')
         return event
 
     except Exception as e:
