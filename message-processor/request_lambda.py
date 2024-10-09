@@ -33,7 +33,7 @@ def lambda_handler(event, context):
             'body': json.dumps({
                 'message': 'Process started successfully',
                 'execution_id': execution_id,
-                'status_url': f"/status/{execution_id}"
+                'status_url': f"/test/status/{execution_id}"
             })
         }
     except Exception as e:
