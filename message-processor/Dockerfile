@@ -2,8 +2,7 @@
 FROM public.ecr.aws/lambda/python:3.9
 
 # Install system dependencies and download static ffmpeg
-RUN yum update -y && \
-    yum install -y libatomic wget tar xz && \
+RUN yum install -y libatomic wget tar xz && \
     wget https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz && \
     tar xvf ffmpeg-release-amd64-static.tar.xz && \
     mv ffmpeg-*-amd64-static/ffmpeg /usr/local/bin/ && \
