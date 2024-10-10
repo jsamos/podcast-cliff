@@ -11,14 +11,11 @@ logger.setLevel(logging.INFO)
 dynamodb = boto3.resource('dynamodb')
 
 def lambda_handler(event, context):
-    # Get the executionID from the API Gateway path parameters
-    execution_id = event['pathParameters']['executionID']
-    
-    # Define your DynamoDB table DYNO_TABLE
+    execution_id = event['pathParameters']['executionID']    
     table_name = os.environ['DYNO_TABLE']
-    
-    # Initialize the DynamoDB table
     table = dynamodb.Table(table_name)
+    stage = event.get('requestContext', {}).get('stage', 'test')
+    logger.info(f"Stage: {stage}")
     
     try:
         # Query the table by partition key (e.g., 'Task ID')
@@ -32,9 +29,7 @@ def lambda_handler(event, context):
         if 'Item' in response:
             # Extract the EventData.S JSON string
             item = response['Item']
-            logger.info(f"Item: {item}")
             event_data_str = item.get('EventData', '')
-            logger.info(f"EventData: {event_data_str}")
             
             if event_data_str:
                 # Parse the JSON string into a dictionary
@@ -42,10 +37,16 @@ def lambda_handler(event, context):
                 
                 # Extract metadata.steps
                 steps = event_data.get('metadata', {}).get('steps', [])
+                body = {'steps': steps}
+
+                if 'storage' in event_data['data']:
+                    channel_id = event_data['data']['storage']['Channel ID']
+                    content_id = event_data['data']['storage']['Content ID']
+                    body['content'] = f"/{stage}/content/{channel_id}/{content_id}"
                 
                 return {
                     'statusCode': 200,
-                    'body': json.dumps({'steps': steps})
+                    'body': json.dumps(body)
                 }
             else:
                 return {
