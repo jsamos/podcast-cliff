@@ -3,6 +3,7 @@ import boto3
 import os
 from botocore.exceptions import ClientError
 import logging
+import urllib.parse
 
 logger = logging.getLogger()
 logger.setLevel(logging.ERROR)
@@ -16,7 +17,9 @@ def lambda_handler(event, context):
     # Extract path parameters
     channel_id = event['pathParameters']['channelID']
     content_id = event['pathParameters']['contentID']
-    
+    channel_id = urllib.parse.unquote(channel_id)
+    content_id = urllib.parse.unquote(content_id)
+
     try:
         # Query DynamoDB
         response = table.get_item(

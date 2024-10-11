@@ -3,7 +3,7 @@ import boto3
 import os
 import traceback
 import logging
-
+import urllib.parse
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -62,7 +62,9 @@ def lambda_handler(event, context):
                 if 'storage' in event_data['data']:
                     channel_id = event_data['data']['storage']['Channel ID']
                     content_id = event_data['data']['storage']['Content ID']
-                    body['content'] = f"/{stage}/content/{channel_id}/{content_id}"
+                    encoded_channel_id = urllib.parse.quote(channel_id)
+                    encoded_content_id = urllib.parse.quote(content_id)
+                    body['content'] = f"/content/{encoded_channel_id}/{encoded_content_id}"
                 
                 return {
                     'statusCode': 200,
