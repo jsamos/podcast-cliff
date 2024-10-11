@@ -10,6 +10,22 @@ logger.setLevel(logging.INFO)
 # Initialize the DynamoDB resource
 dynamodb = boto3.resource('dynamodb')
 
+def calculate_progress(steps):
+    progress_map = {
+        "EbookGenerated": "100%",
+        "TranscriptStored": "80%",
+        "AudioChopped": "40%",
+        "MediaDownloadedToS3": "15%",
+        "RSSFeedProcessed": "10%",
+        "APIRequestReceived": "5%"
+    }
+    
+    for step in progress_map:
+        if step in steps:
+            return progress_map[step]
+    
+    return "0%"
+
 def lambda_handler(event, context):
     execution_id = event['pathParameters']['executionID']    
     table_name = os.environ['DYNO_TABLE']
@@ -38,6 +54,10 @@ def lambda_handler(event, context):
                 # Extract metadata.steps
                 steps = event_data.get('metadata', {}).get('steps', [])
                 body = {'steps': steps}
+
+                # Calculate progress based on steps
+                progress = calculate_progress(steps)
+                body['progress'] = progress
 
                 if 'storage' in event_data['data']:
                     channel_id = event_data['data']['storage']['Channel ID']
