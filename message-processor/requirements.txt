@@ -8,3 +8,4 @@ ffmpeg
 PyYAML
 speechrecognition
 vosk
+openai
