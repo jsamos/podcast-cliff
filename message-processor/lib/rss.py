@@ -1,6 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 from difflib import SequenceMatcher
+import hashlib
 
 def fetch_podcast_rss(rss_url):
     response = requests.get(rss_url)
@@ -35,7 +36,7 @@ def fetch_episode_item(soup, search_query=None, similarity_threshold=0.5):
 
 def item_to_dict(item):
     return {
-            'guid': item.find('guid').text,
+            'guid':  hashlib.md5(item.find('guid').text.encode('utf-8')).hexdigest(),
             'title': item.find('title').text,
             #'creator': item.find('creator').text,
             'description': item.find('description').text,
