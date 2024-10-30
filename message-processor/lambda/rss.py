@@ -1,6 +1,7 @@
 import logging
 import json
 from lib.rss import fetch_podcast_rss, fetch_episode_item, item_to_dict
+import hashlib
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -17,6 +18,7 @@ def lambda_handler(event, context):
     
     if item:
         event['data'] = {**event['data'], **item_to_dict(item)} 
+        event['data']['channel_id'] = hashlib.md5(event['data']['rss_url'].encode('utf-8')).hexdigest()
         logger.info("Found episode: " + json.dumps(event))
         event['metadata']['steps'].append('RSSFeedProcessed')
         return event

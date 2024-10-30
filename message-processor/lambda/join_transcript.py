@@ -19,13 +19,8 @@ def lambda_handler(event, context):
         transcript_content = response['Body'].read().decode('utf-8')        
         transcript_parts.append(transcript_content)
     
-    # Join all transcript parts into a single string
     full_transcript = " ".join(transcript_parts)
-    
-    # Calculate the Channel ID (md5 hash of rss_url)
-    channel_id = hashlib.md5(event['data']['rss_url'].encode('utf-8')).hexdigest()
-    
-    # Get the Content ID from the event
+    channel_id = event['data']['channel_id']    
     content_id = event['data']['guid']
     
     key = {'Channel ID': channel_id, 'Content ID': content_id}
