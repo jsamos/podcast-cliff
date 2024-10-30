@@ -11,11 +11,13 @@ def lambda_handler(event, context):
     execution_id = str(uuid.uuid4())
 
     body = json.loads(event['body'])
+    source_user_id = body.pop("user_id", None)
 
     message = {
         "data": body,
         "metadata": {
             "execution_id": execution_id,
+            "source_user_id": source_user_id,
             "steps": ['APIRequestReceived']
         }
     }
