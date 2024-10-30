@@ -9,3 +9,4 @@ PyYAML
 speechrecognition
 vosk
 openai
+youtube-transcript-api
