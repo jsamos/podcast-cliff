@@ -1,40 +1,45 @@
-import json
 import boto3
-import hashlib
 from lib.files import S3URI
 import os
 
-def lambda_handler(event, context):
+def join_fragments(fragments):
     s3 = boto3.client('s3')
-    dynamodb = boto3.resource('dynamodb')
-    table = dynamodb.Table(os.environ['DYNO_TABLE'])
-    
     transcript_parts = []    
-    fragments = sorted(event['data']['files']['fragments'], key=lambda x: x['index'])
-    
     for fragment in fragments:
-        transcript_path = fragment['transcript']
-        uri = S3URI(transcript_path)
+        uri = S3URI(fragment['transcript'])
         response = s3.get_object(Bucket=uri.bucket, Key=uri.key)
         transcript_content = response['Body'].read().decode('utf-8')        
         transcript_parts.append(transcript_content)
-    
-    full_transcript = " ".join(transcript_parts)
-    channel_id = event['data']['channel_id']    
-    content_id = event['data']['guid']
-    
-    key = {'Channel ID': channel_id, 'Content ID': content_id}
+    return " ".join(transcript_parts)
 
-    table.update_item(
+def store_transcript(channel_id, content_id, transcript, source_user_id=None):
+    dynamodb = boto3.resource('dynamodb')
+    main_table = dynamodb.Table(os.environ['CONTENT_TABLE'])
+    user_table = dynamodb.Table(os.environ['USER_CONTENT_TABLE'])
+    
+    # Store main transcript
+    key = {'Channel ID': channel_id, 'Content ID': content_id}
+    main_table.update_item(
         Key=key,
         UpdateExpression='SET transcript = :transcript',
-        ExpressionAttributeValues={
-            ':transcript': full_transcript
-        }
+        ExpressionAttributeValues={':transcript': transcript}
     )
 
-    # Add the full transcript to the event
-    event['data']['storage'] = key
+    # Store user mapping if source_user_id is provided
+    if source_user_id:
+        user_table.put_item(Item={
+            'User ID': source_user_id,
+            'Content ID': content_id
+        })
+
+    return key
+
+def lambda_handler(event, context):
+    fragments = sorted(event['data']['files']['fragments'], key=lambda x: x['index'])
+    transcript = join_fragments(fragments)
+    channel_id = event['data']['channel_id']    
+    content_id = event['data']['guid']
+    source_user_id = event['metadata'].get('source_user_id')
+    event['data']['storage'] = store_transcript(channel_id, content_id, transcript, source_user_id)
     event['metadata']['steps'].append('TranscriptStored')
-    
     return event
