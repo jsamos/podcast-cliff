@@ -29,7 +29,8 @@ def store_transcript(channel_id, content_id, transcript, source_user_id=None):
     if source_user_id:
         user_table.put_item(Item={
             'User ID': source_user_id,
-            'Content ID': content_id
+            'Content ID': content_id,
+            'Channel ID': channel_id
         })
 
     return key
