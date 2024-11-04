@@ -26,6 +26,13 @@ def calculate_progress(steps):
     
     return "0%"
 
+def get_content_path(storage_data):
+    channel_id = storage_data['Channel ID']
+    content_id = storage_data['Content ID']
+    encoded_channel_id = urllib.parse.quote(channel_id)
+    encoded_content_id = urllib.parse.quote(content_id)
+    return f"/content/{encoded_channel_id}/{encoded_content_id}"
+
 def lambda_handler(event, context):
     execution_id = event['pathParameters']['executionID']    
     table_name = os.environ['DYNO_TABLE']
@@ -60,12 +67,11 @@ def lambda_handler(event, context):
                 body['progress'] = progress
 
                 if 'storage' in event_data['data']:
-                    channel_id = event_data['data']['storage']['Channel ID']
-                    content_id = event_data['data']['storage']['Content ID']
-                    encoded_channel_id = urllib.parse.quote(channel_id)
-                    encoded_content_id = urllib.parse.quote(content_id)
-                    body['content'] = f"/content/{encoded_channel_id}/{encoded_content_id}"
-                
+                    body['content'] = get_content_path(event_data['data']['storage'])
+
+                if 'storage' in event_data['metadata']:
+                    body['content'] = get_content_path(event_data['metadata']['storage'])
+
                 return {
                     'statusCode': 200,
                     'body': json.dumps(body)

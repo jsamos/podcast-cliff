@@ -34,15 +34,25 @@ def fetch_episode_item(soup, search_query=None, similarity_threshold=0.5):
 
     return best_match
 
+def safe_find(item, tag, attribute=None):
+    element = item.find(tag)
+    if not element:
+        return None
+    return element.get(attribute) if attribute else element.text
+
 def item_to_dict(item):
     return {
-            'guid':  hashlib.md5(item.find('guid').text.encode('utf-8')).hexdigest(),
-            'title': item.find('title').text,
-            #'creator': item.find('creator').text,
-            'description': item.find('description').text,
-            'pubDate': item.find('pubDate').text,
-            'url': item.find('enclosure').get('url'),
-            'length': item.find('enclosure').get('length'),
-            'duration': item.find('itunes:duration').text,
-            'type': item.find('enclosure').get('type')
+            'guid':  hashlib.md5(safe_find(item, 'guid').encode('utf-8')).hexdigest(),
+            'title': safe_find(item, 'title'),
+            'description': safe_find(item, 'description'),
+            'pubDate': safe_find(item, 'pubDate'),
+            'url': safe_find(item, 'enclosure', 'url'),
+            'length': safe_find(item, 'enclosure', 'length'),
+            'type': safe_find(item, 'enclosure', 'type'),
+            'duration': safe_find(item, 'itunes:duration'),
+            'image': safe_find(item, 'itunes:image', 'href')
     }
+
+def get_channel_title(soup):
+    return soup.find('channel').find('title').text
+

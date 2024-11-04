@@ -60,6 +60,12 @@ def show(event, context):
         }
     }
 
+def set_metadata_attributes(content_items):
+    for item in content_items:
+        metadata = item.get('Metadata', {})
+        item['title'] = metadata.get('title', 'Unknown')
+        item['image'] = metadata.get('image', None)
+
 def list(event, context):
     # Extract user_id from path parameters
     user_id = event['pathParameters']['userID']
@@ -114,7 +120,9 @@ def list(event, context):
             
             # Handle any unprocessed items
             request_items = response.get('UnprocessedKeys', {})
-        
+            
+        set_metadata_attributes(content_items)
+                
         response_body = {
             'items': content_items
         }
