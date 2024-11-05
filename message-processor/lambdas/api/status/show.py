@@ -1,9 +1,10 @@
 import json
 import boto3
 import os
-import traceback
 import logging
 import urllib.parse
+import lambdas.api.helpers.response as response_json
+
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
@@ -33,7 +34,7 @@ def get_content_path(storage_data):
     encoded_content_id = urllib.parse.quote(content_id)
     return f"/content/{encoded_channel_id}/{encoded_content_id}"
 
-def lambda_handler(event, context):
+def handler(event, context):
     execution_id = event['pathParameters']['executionID']    
     table_name = os.environ['DYNO_TABLE']
     table = dynamodb.Table(table_name)
@@ -41,7 +42,6 @@ def lambda_handler(event, context):
     logger.info(f"Stage: {stage}")
     
     try:
-        # Query the table by partition key (e.g., 'Task ID')
         response = table.get_item(
             Key={
                 'Task ID': execution_id
@@ -72,29 +72,11 @@ def lambda_handler(event, context):
                 if 'storage' in event_data['metadata']:
                     body['content'] = get_content_path(event_data['metadata']['storage'])
 
-                return {
-                    'statusCode': 200,
-                    'body': json.dumps(body)
-                }
+                return response_json.success_response(body)
             else:
-                return {
-                    'statusCode': 404,
-                    'body': json.dumps({'message': 'EventData not found'})
-                }
+                return response_json.not_found()
         else:
-            # If no item is found, return a 404 response
-            return {
-                'statusCode': 404,
-                'body': json.dumps({'message': 'Item not found'})
-            }
+            return response_json.not_found()
     
     except Exception as e:
-        # Handle any errors that occurred during the query
-        return {
-            'statusCode': 500,
-            'body': json.dumps({
-                'message': 'Internal Server Error',
-                'error': str(e),
-                'traceback': ''.join(traceback.format_tb(e.__traceback__))
-            })
-        }
+        return response_json.error_response(str(e))

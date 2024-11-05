@@ -8,7 +8,7 @@ logger.setLevel(logging.INFO)
 # Hardcoded API key for simplicity (you can store it in an environment variable or AWS Secrets Manager)
 VALID_API_KEY = os.environ['API_KEY']
 
-def lambda_handler(event, context):
+def handler(event, context):
     # Log the incoming event for debugging (if needed)
     print("Received event:", json.dumps(event))
 
