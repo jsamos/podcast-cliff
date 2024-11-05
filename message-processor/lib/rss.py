@@ -8,6 +8,19 @@ def fetch_podcast_rss(rss_url):
     response.raise_for_status()
     return BeautifulSoup(response.content, 'xml')
 
+def get_channel_image(soup):
+    """Safely get channel image URL from RSS feed"""
+    channel = soup.find('channel')
+    if not channel:
+        return None
+    
+    image = channel.find('image')
+    if not image:
+        return None
+        
+    url = image.find('url')
+    return url.text if url else None
+
 def similarity(a, b):
     """Calculate the similarity between two strings."""
     return SequenceMatcher(None, a, b).ratio()
