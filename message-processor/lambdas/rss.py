@@ -12,9 +12,10 @@ def lambda_handler(event, context):
     logger.info("Received Lambda Event: " + json_string)
     url = event['data']['rss_url']
     title = event['data']['title']
-    logger.info(f"Fetching episode from {url} and title: {title}")
+    episode_guid = event['data']['episode_guid']
+    logger.info(f"Fetching episode from {url} guid: {episode_guid} and title: {title}")
     soup = rss.fetch_podcast_rss(url)
-    item = rss.fetch_episode_item(soup, title)
+    item = rss.fetch_episode_item(soup, episode_guid)
     
     if item:
         event['data'] = {**event['data'], **rss.item_to_dict(item)} 

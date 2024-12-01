@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-from difflib import SequenceMatcher
 import hashlib
 
 def fetch_podcast_rss(rss_url):
@@ -21,31 +20,17 @@ def get_channel_image(soup):
     url = image.find('url')
     return url.text if url else None
 
-def similarity(a, b):
-    """Calculate the similarity between two strings."""
-    return SequenceMatcher(None, a, b).ratio()
+def find_item_by_guid(soup, episode_guid):
+    for item in soup.find_all('item'):
+        guid_tag = item.find('guid')
+        if guid_tag and guid_tag.text == episode_guid:
+            return item
+    return None
 
-def fetch_episode_item(soup, search_query=None, similarity_threshold=0.5):
-    items = soup.find_all('item')
-   
-    if not search_query:
-        return items[0]
-
-    highest_similarity = 0
-
-    for item in items:
-        title = item.find('title').text.lower()
-        search_query_lower = search_query.lower()
-
-        # Calculate similarity
-        current_similarity = similarity(title, search_query_lower)
-
-        # Update best match if current item is more similar than previous best
-        if current_similarity > highest_similarity and current_similarity >= similarity_threshold:
-            best_match = item
-            highest_similarity = current_similarity
-
-    return best_match
+def fetch_episode_item(soup, episode_guid=None):
+    if not episode_guid:
+        return soup.find('item')
+    return find_item_by_guid(soup, episode_guid)
 
 def safe_find(item, tag, attribute=None):
     element = item.find(tag)
